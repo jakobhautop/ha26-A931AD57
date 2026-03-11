@@ -28,6 +28,8 @@ struct Handle {
     block_count: u32,
     version: u32,
     root_node_idx: u32,
+    inodes: Vec<INode>,
+    bm: Vec::<u32>
 }
 
 impl Handle {
@@ -55,7 +57,8 @@ impl Handle {
         file.read_exact(&mut buf)?;
 
         let magic = u32::from_be_bytes(buf[0..4].try_into().unwrap());
-        let magic_string = std::str::from_utf8(&magic).unwrap();
+        let magic_slice = magic.to_be_bytes();
+        let magic_string = std::str::from_utf8(&magic_slice).unwrap();
         println!("Found magic number: {magic_string}");
 
         /* block_size: u32::from_be_bytes(buf[4..8].try_into().unwrap()),
