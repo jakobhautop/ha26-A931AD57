@@ -1,3 +1,8 @@
+use std::fs::File;
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
+
 struct INodeHeader {
     uid: u32,
     gid: u32,
@@ -41,10 +46,40 @@ impl Handle {
         }
     }
 
-    fn read_super_block(&mut self) {}
+    fn read_super_block(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+
+        println!("RSB: Beginning reading super block");
+
+        let mut file = File::open(self.path.clone())?;
+
+        file.seek(SeekFrom::Start(0))?;
+
+        let mut buf = [0u8; 16];
+        file.read_exact(&mut buf)?;
+
+        let magic = u32::from_be_bytes(buf[0..4].try_into().unwrap());
+
+        println!("Found magic number: {magic}");
+
+        /* block_size: u32::from_be_bytes(buf[4..8].try_into().unwrap()),
+        #inode_count: u32::from_be_bytes(buf[8..12].try_into().unwrap()),
+        #root_inode: u32::from_be_bytes(buf[12..16].try_into().unwrap()),
+        */
+        
+        println!("RSB: Completed reading super block!");
+
+        return Ok(())
+
+
+    }
 
     fn read_from_path(path: &str) -> Self {
         println!("RFP: Beginning read from path {path}");
+
+        if !path.ends_with(".u5fs") {
+            panic!("Not a .u5fs file!");
+        }
+
         let mut handle = Self::init(path);
         println!("RFP: Read from path complete!");
         return handle;
