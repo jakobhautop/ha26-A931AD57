@@ -57,8 +57,8 @@ impl Handle {
         file.read_exact(&mut buf)?;
 
         let magic = u32::from_be_bytes(buf[0..4].try_into().unwrap());
-
-        println!("Found magic number: {magic}");
+        let magic_string = std::str::from_utf8(&bytes).unwrap();
+        println!("Found magic number: {magic_string}");
 
         /* block_size: u32::from_be_bytes(buf[4..8].try_into().unwrap()),
         #inode_count: u32::from_be_bytes(buf[8..12].try_into().unwrap()),
