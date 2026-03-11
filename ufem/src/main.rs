@@ -65,11 +65,11 @@ impl Handle {
         println!("RSB: Version: {0}", self.version);
 
         self.block_size = u32::from_be_bytes(buf[8..12].try_into().unwrap());
+        println!("RSB: Block size: {0}", self.block_size);
         self.block_count = u32::from_be_bytes(buf[12..16].try_into().unwrap());
+        println!("RSB: Block count: {0}", self.block_count);
         self.root_node_idx = u32::from_be_bytes(buf[16..20].try_into().unwrap());
-
-
-
+        println!("RSB: Root node index: {0}", self.root_node_idx);
 
         println!("RSB: Completed reading super block!");
 
