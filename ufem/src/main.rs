@@ -53,7 +53,7 @@ impl Handle {
 
         file.seek(SeekFrom::Start(0))?;
 
-        let mut buf = [0u8; 16];
+        let mut buf = [0u8; 20];
         file.read_exact(&mut buf)?;
         
         let magic_be = &buf[0..4];
@@ -61,10 +61,15 @@ impl Handle {
         println!("RSB: Found magic number: {magic_asci}");
 
 
-        /* block_size: u32::from_be_bytes(buf[4..8].try_into().unwrap()),
-        #inode_count: u32::from_be_bytes(buf[8..12].try_into().unwrap()),
-        #root_inode: u32::from_be_bytes(buf[12..16].try_into().unwrap()),
-        */
+        self.version = u32::from_be_bytes(buf[4..8].try_into().unwrap());
+        println!("RSB: Version: {0}", self.version);
+
+        self.block_size = u32::from_be_bytes(buf[8..12].try_into().unwrap());
+        self.block_count = u32::from_be_bytes(buf[12..16].try_into().unwrap());
+        self.root_node_idx = u32::from_be_bytes(buf[16..20].try_into().unwrap());
+
+
+
 
         println!("RSB: Completed reading super block!");
 
