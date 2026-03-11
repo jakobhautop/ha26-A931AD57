@@ -17,6 +17,7 @@ struct INode {
 }
 
 struct Handle {
+    path: String,
     block_size: u32,
     file_system_size: u32,
     block_count: u32,
@@ -27,8 +28,9 @@ struct Handle {
 }
 
 impl Handle {
-    fn init() -> Self {
+    fn init(path: &str) -> Self {
         Handle {
+            path: path.to_string(),
             block_size: 0,
             file_system_size: 0,
             block_count: 0,
@@ -39,12 +41,13 @@ impl Handle {
         }
     }
 
+    fn read_super_block(&mut self) {}
+
     fn read_from_path(path: &str) -> Self {
         println!("RFP: Beginning read from path {path}");
-        let mut handle = Self::init();
+        let mut handle = Self::init(path);
         println!("RFP: Read from path complete!");
-        return handle
-        
+        return handle;
     }
 
     fn dump(&self, path: &str) {
