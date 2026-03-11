@@ -29,7 +29,7 @@ struct Handle {
     version: u32,
     root_node_idx: u32,
     inodes: Vec<INode>,
-    bm: Vec::<u32>
+    bm: Vec<u32>,
 }
 
 impl Handle {
@@ -55,21 +55,20 @@ impl Handle {
 
         let mut buf = [0u8; 20];
         file.read_exact(&mut buf)?;
-        
+
         let magic_be = &buf[0..4];
         let magic_asci = std::str::from_utf8(&magic_be).unwrap();
         println!("RSB: Found magic number: {magic_asci}");
-
 
         self.version = u32::from_be_bytes(buf[4..8].try_into().unwrap());
         println!("RSB: Version: {0}", self.version);
 
         self.block_size = u32::from_be_bytes(buf[8..12].try_into().unwrap());
-        println!("RSB: Block size: {0}", self.block_size);
+        println!("RSB: Block size: {0} Bytes", self.block_size);
         self.block_count = u32::from_be_bytes(buf[12..16].try_into().unwrap());
         println!("RSB: Block count: {0}", self.block_count);
         self.root_node_idx = u32::from_be_bytes(buf[16..20].try_into().unwrap());
-        println!("RSB: Root node index: {0}", self.root_node_idx);
+        println!("RSB: Root node block index: {0}", self.root_node_idx);
 
         println!("RSB: Completed reading super block!");
 
