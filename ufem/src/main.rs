@@ -19,22 +19,22 @@ impl SuperBlock {
         let magic_asci = std::str::from_utf8(&magic_be).unwrap();
 
         if magic_asci != "U5FS" {
-            panic!("ERROR READING MAGIC: {magic_asci}");
+            panic!("FBE: ERROR READING MAGIC: {magic_asci}");
         }
 
-        println!("RSB: Found magic number: {magic_asci}");
+        println!("FBE: Found magic number: {magic_asci}");
 
         let version = u32::from_be_bytes(buf[4..8].try_into().unwrap());
-        println!("RSB: Version: {0}", version);
+        println!("FBE: Version: {0}", version);
 
         let blocksize = u32::from_be_bytes(buf[8..12].try_into().unwrap());
-        println!("RSB: Block size: {0} Bytes", blocksize);
+        println!("FBE: Block size: {0} Bytes", blocksize);
         
         let blockcount = u32::from_be_bytes(buf[12..16].try_into().unwrap());
-        println!("RSB: Block count: {0}", blockcount);
+        println!("FBE: Block count: {0}", blockcount);
         
         let rootnode = u32::from_be_bytes(buf[16..20].try_into().unwrap());
-        println!("RSB: Root node block index: {0}", rootnode);
+        println!("FBE: Root node block index: {0}", rootnode);
 
         return SuperBlock {
             magic: u32::from_be_bytes(magic_be).try_into().unwrap(),
@@ -116,33 +116,13 @@ impl Handle {
 
     fn read_super_block(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         println!("RSB: Beginning reading super block");
-
         let mut file = File::open(self.path.clone())?;
-
         file.seek(SeekFrom::Start(0))?;
-
         let mut buf = [0u8; 20];
         file.read_exact(&mut buf)?;
-
         let sb = SuperBlock::from_be_bytes(&buf);
-        /*
-        let magic_be = &buf[0..4];
-        let magic_asci = std::str::from_utf8(&magic_be).unwrap();
-        println!("RSB: Found magic number: {magic_asci}");
-
-        self.version = u32::from_be_bytes(buf[4..8].try_into().unwrap());
-        println!("RSB: Version: {0}", self.version);
-
-        self.block_size = u32::from_be_bytes(buf[8..12].try_into().unwrap());
-        println!("RSB: Block size: {0} Bytes", self.block_size);
-        self.block_count = u32::from_be_bytes(buf[12..16].try_into().unwrap());
-        println!("RSB: Block count: {0}", self.block_count);
-        self.root_node_idx = u32::from_be_bytes(buf[16..20].try_into().unwrap());
-        println!("RSB: Root node block index: {0}", self.root_node_idx);
-        */
-
+        self.sb = Some(sb);
         println!("RSB: Completed reading super block!");
-
         return Ok(());
     }
 
