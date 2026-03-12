@@ -192,13 +192,13 @@ fn main() {
     let arg2 = &args[3];
 
     match command.as_str() {
-        "fdump" => {
-            println!("CLI: Beginning fdump..");
+        "fsdump" => {
+            println!("CLI: Beginning fsdump..");
             let in_path = arg1.clone();
             let out_path = arg2.clone();
             let handle = Handle::init(&in_path);
             let handle = handle.fsdump(&out_path);
-            println!("CLI: Completed fdump!");
+            println!("CLI: Completed fsdump!");
             println!("CLI: Browse files at {out_path}");
         }
         _ => panic!("Unknown command: {command}"),
