@@ -3,6 +3,50 @@ use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
 
+struct SuperBlock {
+    magic: u32,
+    version: u32,
+    blocksize: u32,
+    blockcount: u32,
+    rootnode: u32, 
+}
+
+impl SuperBlock {
+    
+    fn from_be_bytes(buf: &[u8; 20]) -> Self {
+
+        let magic_be: [u8; 4] = buf[0..4].try_into().unwrap();
+        let magic_asci = std::str::from_utf8(&magic_be).unwrap();
+
+        if magic_asci != "U5FS" {
+            panic!("ERROR READING MAGIC: {magic_asci}");
+        }
+
+        println!("RSB: Found magic number: {magic_asci}");
+
+        let version = u32::from_be_bytes(buf[4..8].try_into().unwrap());
+        println!("RSB: Version: {0}", version);
+
+        let blocksize = u32::from_be_bytes(buf[8..12].try_into().unwrap());
+        println!("RSB: Block size: {0} Bytes", blocksize);
+        
+        let blockcount = u32::from_be_bytes(buf[12..16].try_into().unwrap());
+        println!("RSB: Block count: {0}", blockcount);
+        
+        let rootnode = u32::from_be_bytes(buf[16..20].try_into().unwrap());
+        println!("RSB: Root node block index: {0}", rootnode);
+
+        return SuperBlock {
+            magic: u32::from_be_bytes(magic_be).try_into().unwrap(),
+            version,
+            blocksize,
+            blockcount,
+            rootnode
+        }
+    } 
+
+}
+
 struct INodeHeader {
     uid: u32,
     gid: u32,
@@ -17,32 +61,56 @@ struct INodeHeader {
     size: u32,
 }
 
-struct INode {
-    header: INodeHeader,
+struct FileNode {
+    header: INodeHeader, 
+    blocks: Vec<u32>,
+    indirect1: u32,
+    indirect2: u32,
+    reserved0: u32,
+    reserved1: u32
 }
+
+struct DirNode {
+    header: INodeHeader,
+    entries: Vec<DirEntry>
+}
+
+struct DirEntry {
+    dnode: u32,
+    dtype: DTypes,
+    name: String
+}
+
+enum DTypes {
+    U5FS_DTYPE_DIR,
+    U5FS_DTYPE_FILE,
+    U5FS_DTYPE_CDEV,
+    U5FS_DTYPE_BDEV,
+    U5FS_DTYPE_LNK,
+    U5FS_DTYPE_PIPE,
+    U5FS_DTYPE_SOCK
+}
+
+struct FileIndirect1 {
+    blocks: Vec<u32>
+}
+
+struct FileIndirect2 {
+    reserved: u32,
+    blocks: Vec<u32>
+}
+
 
 struct Handle {
     path: String,
-    block_size: u32,
-    file_system_size: u32,
-    block_count: u32,
-    version: u32,
-    root_node_idx: u32,
-    inodes: Vec<INode>,
-    bm: Vec<u32>,
+    sb: Option<SuperBlock>
 }
 
 impl Handle {
     fn init(path: &str) -> Self {
         Handle {
             path: path.to_string(),
-            block_size: 0,
-            file_system_size: 0,
-            block_count: 0,
-            version: 0,
-            root_node_idx: 0,
-            inodes: Vec::new(),
-            bm: Vec::new(),
+            sb: None
         }
     }
 
@@ -56,6 +124,8 @@ impl Handle {
         let mut buf = [0u8; 20];
         file.read_exact(&mut buf)?;
 
+        let sb = SuperBlock::from_be_bytes(&buf);
+        /*
         let magic_be = &buf[0..4];
         let magic_asci = std::str::from_utf8(&magic_be).unwrap();
         println!("RSB: Found magic number: {magic_asci}");
@@ -69,6 +139,7 @@ impl Handle {
         println!("RSB: Block count: {0}", self.block_count);
         self.root_node_idx = u32::from_be_bytes(buf[16..20].try_into().unwrap());
         println!("RSB: Root node block index: {0}", self.root_node_idx);
+        */
 
         println!("RSB: Completed reading super block!");
 
