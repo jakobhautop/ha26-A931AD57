@@ -106,7 +106,7 @@ impl From<u8> for DTypes {
             _ => {
                 println!("  WARN: invalid dtype {0}", v);
                 DTypes::unknown
-            },
+            }
         }
     }
 }
@@ -325,14 +325,15 @@ impl Handle {
         let dir_entries: Vec<DirEntry> = dir_entries_bytes
             .chunks(header.size.try_into().unwrap())
             .map(|chunk| {
-                let dnode = u32::from_be_bytes(chunk[0..4].try_into().unwrap());
-                let dtype = DTypes::from(u8::from_be_bytes(chunk[4..5].try_into().unwrap()));
                 let name_bytes = &chunk[5..];
                 let name_null_byte = name_bytes
                     .iter()
                     .position(|&b| b == 0)
                     .unwrap_or(name_bytes.len());
                 let name = String::from_utf8(name_bytes[..name_null_byte].to_vec()).unwrap();
+                println!("DEN: entry {name}");
+                let dnode = u32::from_be_bytes(chunk[0..4].try_into().unwrap());
+                let dtype = DTypes::from(u8::from_be_bytes(chunk[4..5].try_into().unwrap()));
                 DirEntry { dnode, dtype, name }
             })
             .collect();
