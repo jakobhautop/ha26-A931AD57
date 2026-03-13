@@ -348,7 +348,7 @@ impl Handle {
             "DEN: Completed reading dir {:?} valid entries from bytes",
             dir_entries.len()
         );
-        return Vec::new();
+        return dir_entries;
     }
 }
 
