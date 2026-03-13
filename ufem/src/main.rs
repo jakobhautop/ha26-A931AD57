@@ -323,7 +323,12 @@ impl Handle {
             .map(|chunk| {
                 let dnode = u32::from_be_bytes(chunk[0..4].try_into().unwrap());
                 let dtype = DTypes::from(u8::from_be_bytes(chunk[4..5].try_into().unwrap()));
-                let name = String::from_utf8(chunk[5..header.size as usize].to_vec()).unwrap();
+                let name_bytes = &chunk[5..];
+                let name_null_byte = name_bytes
+                    .iter()
+                    .position(|&b| b == 0)
+                    .unwrap_or(name_bytes.len());
+                let name = String::from_utf8(name_bytes[..name_null_byte].to_vec()).unwrap();
                 DirEntry { dnode, dtype, name }
             })
             .collect();
