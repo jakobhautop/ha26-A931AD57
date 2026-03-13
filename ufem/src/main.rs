@@ -3,7 +3,7 @@ use std::fs::create_dir;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
-use std::os::unix::fs::chown;
+// use std::os::unix::fs::chown; temporarily not used
 
 #[derive(Copy, Clone)]
 struct SuperBlock {
@@ -92,6 +92,21 @@ impl std::fmt::Display for DTypes {
     }
 }
 
+impl From<u8> for DTypes {
+    fn from(v: u8) -> Self {
+        match v {
+            1 => DTypes::U5fsDtypeDir,
+            2 => DTypes::U5fsDtypeFile,
+            3 => DTypes::U5fsDtypeCdev,
+            4 => DTypes::U5fsDtypeBdev,
+            5 => DTypes::U5fsDtypeLnk,
+            6 => DTypes::U5fsDtypePipe,
+            7 => DTypes::U5fsDtypeSock,
+            _ => panic!("invalid dtype"),
+        }
+    }
+}
+
 struct FileIndirect1 {
     blocks: Vec<u32>,
 }
@@ -145,12 +160,12 @@ impl Handle {
         let path = dir.to_owned() + "/" + name;
         println!("DMP: Path: {path}");
         let block = self.get_block(inode);
-        let inode_header: INodeHeader = Self::read_header(block);
+        let (inode_header, _) = Self::read_header(&block);
         match dtype {
             DTypes::U5fsDtypeDir => {
                 println!("DMP: Processing dir: {path}");
                 Self::create_dir_with_perm(&path, inode_header.uid, inode_header.gid).unwrap();
-                let dir_entries = Self::parse_dir_entries(inode);
+                let dir_entries = self.parse_dir_entries(inode);
                 for entry in dir_entries {
                     self.recursive_dump(entry.dnode, entry.dtype, &entry.name, &path);
                 }
@@ -184,7 +199,7 @@ impl Handle {
         return buf;
     }
 
-    fn read_header(block: Vec<u8>) -> INodeHeader {
+    fn read_header(block: &Vec<u8>) -> (INodeHeader, u8) {
         println!("HDR: Beginning reading header..");
 
         let bytes_reserved = 4;
@@ -257,23 +272,62 @@ impl Handle {
         from = to;
 
         println!("HDR: Completed reading header..");
-        return INodeHeader {
-            uid,
-            gid,
-            atime_sec,
-            atime_nsec,
-            mtime_sec,
-            mtime_nsec,
-            ctime_sec,
-            ctime_nsec,
-            perm,
-            links,
-            size,
-        };
+
+        let header_length = bytes_reserved
+            + bytes_uid
+            + bytes_gid
+            + bytes_atime_sec
+            + bytes_atime_nsec
+            + bytes_mtime_sec
+            + bytes_mtime_nsec
+            + bytes_ctime_sec
+            + bytes_ctime_nsec
+            + bytes_perm
+            + bytes_links
+            + bytes_size;
+
+        return (
+            INodeHeader {
+                uid,
+                gid,
+                atime_sec,
+                atime_nsec,
+                mtime_sec,
+                mtime_nsec,
+                ctime_sec,
+                ctime_nsec,
+                perm,
+                links,
+                size,
+            },
+            header_length.try_into().unwrap(),
+        );
     }
 
-    fn parse_dir_entries(inode: u32) -> Vec<DirEntry> {
+    fn parse_dir_entries(&self, inode: u32) -> Vec<DirEntry> {
         println!("DEN: Parsing dir entries: {inode}");
+        println!("DEN: Reading block..");
+        let block = self.get_block(inode);
+        println!("DEN: Completed reading block..");
+        println!("DEN: Reading header..");
+        let (header, header_length) = Self::read_header(&block);
+        println!("DEN: Completed reading header.. Size: {0}", header.size);
+        println!("DEN: Reading entries bytes");
+        let dir_entries_start = header_length as usize;
+        let dir_entries_stop = self.sb.unwrap().blocksize as usize;
+        let dir_entries_bytes = &block[dir_entries_start..dir_entries_stop];
+        println!("DEN: Completed reading entries bytes");
+        println!("DEN: Reading dir entries from bytes");
+        let dir_entries: Vec<DirEntry> = dir_entries_bytes
+            .chunks(header.size.try_into().unwrap())
+            .map(|chunk| {
+                let dnode = u32::from_be_bytes(chunk[0..4].try_into().unwrap());
+                let dtype = DTypes::from(u8::from_be_bytes(chunk[4..5].try_into().unwrap()));
+                let name = String::from_utf8(chunk[5..header.size as usize].to_vec()).unwrap();
+                DirEntry { dnode, dtype, name }
+            })
+            .collect();
+        println!("DEN: Completed reading dir entries from bytes");
         return Vec::new();
     }
 }
