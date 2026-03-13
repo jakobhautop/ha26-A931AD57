@@ -77,6 +77,7 @@ struct DirEntry {
 #[repr(u8)]
 #[derive(Copy, Clone)]
 enum DTypes {
+    unknown = 0,
     U5fsDtypeDir = 1,
     U5fsDtypeFile = 2,
     U5fsDtypeCdev = 3,
@@ -102,7 +103,10 @@ impl From<u8> for DTypes {
             5 => DTypes::U5fsDtypeLnk,
             6 => DTypes::U5fsDtypePipe,
             7 => DTypes::U5fsDtypeSock,
-            _ => panic!("invalid dtype"),
+            _ => {
+                println!("  WARN: invalid dtype {0}", v);
+                DTypes::unknown
+            },
         }
     }
 }
