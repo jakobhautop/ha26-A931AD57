@@ -165,8 +165,10 @@ impl Handle {
     fn create_dir_with_perm(path: &str, uid: u32, gid: u32) -> std::io::Result<()> {
         println!("DIR: Creating {path} with uid {uid} and gid {gid}");
         create_dir(path)?;
+        println!("DIR: Completed creating {path}");
+        println!("DIR: Chown {uid} {gid}");
         chown(path, Some(uid), Some(gid))?;
-        println!("DIR: Completed creation of {path}");
+        println!("DIR: Completed creation of {path} with permissions");
         Ok(())
     }
 
