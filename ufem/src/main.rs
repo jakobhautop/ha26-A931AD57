@@ -75,7 +75,7 @@ struct DirEntry {
 }
 
 #[repr(u8)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 enum DTypes {
     unknown = 0,
     U5fsDtypeDir = 1,
@@ -168,11 +168,17 @@ impl Handle {
         match dtype {
             DTypes::U5fsDtypeDir => {
                 println!("DMP: Processing dir: {path}");
+                println!("DMP: Creating dir {path}");
                 Self::create_dir_with_perm(&path, inode_header.uid, inode_header.gid).unwrap();
+                println!("DMP: Completed creating dir");
+                println!("DMP: Reading entries");
                 let dir_entries = self.parse_dir_entries(inode);
+                println!("DMP: Completed reading entries");
+                println!("DMP: Beginning processing entries..");
                 for entry in dir_entries {
                     self.recursive_dump(entry.dnode, entry.dtype, &entry.name, &path);
                 }
+                println!("DMP: Completed processing entries");
                 println!("DMP: Completed dir: {path}");
             }
             _ => {
@@ -336,8 +342,12 @@ impl Handle {
                 let dtype = DTypes::from(u8::from_be_bytes(chunk[4..5].try_into().unwrap()));
                 DirEntry { dnode, dtype, name }
             })
+            .filter(|entry| entry.dtype != DTypes::unknown)
             .collect();
-        println!("DEN: Completed reading dir entries from bytes");
+        println!(
+            "DEN: Completed reading dir {:?} valid entries from bytes",
+            dir_entries.len()
+        );
         return Vec::new();
     }
 }
