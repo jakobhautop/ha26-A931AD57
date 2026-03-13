@@ -1,7 +1,9 @@
 use std::fs::File;
+use std::fs::create_dir;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
+use std::os::unix::fs::chown;
 
 #[derive(Copy, Clone)]
 struct SuperBlock {
@@ -75,13 +77,13 @@ struct DirEntry {
 #[repr(u8)]
 #[derive(Copy, Clone)]
 enum DTypes {
-    U5FS_DTYPE_DIR = 1,
-    U5FS_DTYPE_FILE = 2,
-    U5FS_DTYPE_CDEV = 3,
-    U5FS_DTYPE_BDEV = 4,
-    U5FS_DTYPE_LNK = 5,
-    U5FS_DTYPE_PIPE = 6,
-    U5FS_DTYPE_SOCK = 7,
+    U5fsDtypeDir = 1,
+    U5fsDtypeFile = 2,
+    U5fsDtypeCdev = 3,
+    U5fsDtypeBdev = 4,
+    U5fsDtypeLnk = 5,
+    U5fsDtypePipe = 6,
+    U5fsDtypeSock = 7,
 }
 
 impl std::fmt::Display for DTypes {
@@ -132,25 +134,26 @@ impl Handle {
     fn fsdump(&self, path_to_dump: &str) {
         println!("RFP: Beginning read_image_and_dump to {path_to_dump}");
         let sb = self.sb.unwrap().clone();
-        Self::recursive_dump(sb.rootnode, DTypes::U5FS_DTYPE_DIR, "root", path_to_dump);
+        self.recursive_dump(sb.rootnode, DTypes::U5fsDtypeDir, "root", path_to_dump);
 
         println!("RFP: Read from path complete!");
     }
 
-    fn recursive_dump(inode: u32, dtype: DTypes, name: &str, path: &str) {
-        println!("DMP: Beginning recursive dump: {inode} {dtype} {name} {path}");
-        let full_path = path.to_owned() + "/" + name;
-        println!("DMP: Full path: {full_path}");
-        let inode_header: INodeHeader = Self::read_header(inode);
+    fn recursive_dump(&self, inode: u32, dtype: DTypes, name: &str, dir: &str) {
+        println!("DMP: Beginning recursive dump: {inode} {dtype} {name} {dir}");
+        let path = dir.to_owned() + "/" + name;
+        println!("DMP: Path: {path}");
+        let block = self.get_block(inode);
+        let inode_header: INodeHeader = Self::read_header(block);
         match dtype {
-            DTypes::U5FS_DTYPE_DIR => {
-                println!("DMP: Processing dir: {full_path}");
-                Self::create_dir(&full_path, inode_header.uid, inode_header.gid);
+            DTypes::U5fsDtypeDir => {
+                println!("DMP: Processing dir: {path}");
+                Self::create_dir_with_perm(&path, inode_header.uid, inode_header.gid).unwrap();
                 let dir_entries = Self::parse_dir_entries(inode);
                 for entry in dir_entries {
-                    Self::recursive_dump(entry.dnode, entry.dtype, &entry.name, &full_path);
+                    self.recursive_dump(entry.dnode, entry.dtype, &entry.name, &path);
                 }
-                println!("DMP: Completed dir: {full_path}");
+                println!("DMP: Completed dir: {path}");
             }
             _ => {
                 println!("DMP: Unhandled type: {dtype}")
@@ -158,15 +161,57 @@ impl Handle {
         }
     }
 
-    fn create_dir(full_path: &str, uid: u32, gid: u32) {
-        println!("DIR: Should create next.. {full_path}");
+    fn create_dir_with_perm(path: &str, uid: u32, gid: u32) -> std::io::Result<()> {
+        println!("DIR: Creating {path} with uid {uid} and gid {gid}");
+        create_dir(path)?;
+        chown(path, Some(uid), Some(gid))?;
+        println!("DIR: Completed creation of {path}");
+        Ok(())
     }
 
-    fn read_header(inode: u32) -> INodeHeader {
-        println!("HDR: Should read header: {inode}");
+    fn get_block(&self, block_index: u32) -> Vec<u8> {
+        println!("BLK: Beginning read of block {block_index}");
+        let mut file = File::open(self.path.clone()).unwrap();
+        let byte_index = self.sb.unwrap().blocksize * block_index;
+        println!("BLK: Reading from byte {byte_index}");
+        file.seek(SeekFrom::Start(byte_index.into())).unwrap();
+        let mut buf = vec![0u8; self.sb.unwrap().blocksize.try_into().unwrap()];
+        file.read_exact(&mut buf).unwrap();
+        println!("BLK: Completed reading block {block_index}");
+        return buf;
+    }
+
+    fn read_header(block: Vec<u8>) -> INodeHeader {
+        println!("HDR: Beginning reading header..");
+
+        let bytes_reserved = 4;
+        let bytes_uid = 4;
+        let bytes_gid = 4;
+        let bytes_atime_sec = 4;
+        let bytes_atime_nsec = 4;
+        let bytes_mtime_sec = 4;
+        let bytes_mtime_nsec = 4;
+        let bytes_ctime_sec = 4;
+        let bytes_ctime_nsec = 4;
+        let bytes_perm = 2;
+        let bytes_links = 2;
+        let bytes_size = 4;
+
+        let mut from = bytes_reserved;
+        let mut to = from + bytes_uid;
+        let uid = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        from = to;
+        println!("HDR: UID: {uid}. From: {from}. To: {to}");
+
+        let mut to = from + bytes_gid;
+        let gid = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        from = to;
+        println!("HDR: GID: {gid}. From: {from}. To: {to}");
+
+        println!("HDR: Completed reading header..");
         return INodeHeader {
-            gid: 0,
-            uid: 0,
+            gid: uid,
+            uid: gid,
             atime_sec: 0,
             atime_nsec: 0,
             mtime_sec: 0,
