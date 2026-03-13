@@ -203,10 +203,15 @@ impl Handle {
         from = to;
         println!("HDR: UID: {uid}. From: {from}. To: {to}");
 
-        let mut to = from + bytes_gid;
+        to = from + bytes_gid;
         let gid = u32::from_be_bytes(block[from..to].try_into().unwrap());
         from = to;
         println!("HDR: GID: {gid}. From: {from}. To: {to}");
+
+        to = from + bytes_atime_sec;
+        let atime_sec = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        from = to;
+        println!("HDR: Atime_sec: {atime_sec}. From: {from}. To: {to}");
 
         println!("HDR: Completed reading header..");
         return INodeHeader {
