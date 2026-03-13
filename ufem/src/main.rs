@@ -173,7 +173,7 @@ impl Handle {
                 println!("DMP: Completed creating dir");
                 println!("DMP: Reading entries");
                 let dir_entries = self.parse_dir_entries(inode);
-                println!("DMP: Completed reading entries");
+                println!("DMP: Completed reading entries: {:?}", dir_entries.len());
                 println!("DMP: Beginning processing entries..");
                 for entry in dir_entries {
                     self.recursive_dump(entry.dnode, entry.dtype, &entry.name, &path);
