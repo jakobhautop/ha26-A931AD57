@@ -166,8 +166,8 @@ impl Handle {
         println!("DIR: Creating {path} with uid {uid} and gid {gid}");
         create_dir(path)?;
         println!("DIR: Completed creating {path}");
-        println!("DIR: Chown {uid} {gid}");
-        chown(path, Some(uid), Some(gid))?;
+        println!("DIR: Chown {uid} {gid} [TEMPORARILY IGNORED]");
+        //chown(path, Some(uid), Some(gid))?;
         println!("DIR: Completed creation of {path} with permissions");
         Ok(())
     }
