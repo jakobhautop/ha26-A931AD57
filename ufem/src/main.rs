@@ -164,7 +164,7 @@ impl Handle {
         let path = dir.to_owned() + "/" + name;
         println!("DMP: Path: {path}");
         let block = self.get_block(inode);
-        let (inode_header, _) = Self::read_header(&block);
+        let (inode_header, header_length) = Self::read_header(&block);
         match dtype {
             DTypes::U5fsDtypeDir => {
                 println!("DMP: Processing dir: {path}");
@@ -181,10 +181,28 @@ impl Handle {
                 println!("DMP: Completed processing entries");
                 println!("DMP: Completed dir: {path}");
             }
+            DTypes::U5fsDtypeFile => {
+                println!("DMP: Processing file: {path}");
+                self.dump_file(block, &path, header_length);
+                println!("DMP: Completed processing file {path}");
+            }
             _ => {
                 println!("DMP: Unhandled type: {dtype}")
             }
         }
+    }
+
+    fn dump_file(&self, block: Vec<u8>, path: &str, header_length: u8) {
+        println!("FIL: Beginning dump of file {path}");
+        println!("FIL: Slicing block..");
+        let blocksize = self.sb.unwrap().blocksize;
+        let blocks = &block[header_length as usize..(blocksize - 16) as usize];
+        let indirect1 = &block[(blocksize - 16) as usize..(blocksize - 12) as usize];
+        let indirect2 = &block[(blocksize - 12) as usize..(blocksize - 8) as usize];
+        println!("FIL: Completed slicing block");
+
+        println!("FIL: Dump blocks");
+        println!("FIL: Completed dump of file {path}");
     }
 
     fn create_dir_with_perm(path: &str, uid: u32, gid: u32) -> std::io::Result<()> {
