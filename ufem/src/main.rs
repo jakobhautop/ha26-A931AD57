@@ -134,6 +134,7 @@ impl Handle {
     fn fsdump(&self, path_to_dump: &str) {
         println!("RFP: Beginning read_image_and_dump to {path_to_dump}");
         let sb = self.sb.unwrap().clone();
+        create_dir(path_to_dump);
         self.recursive_dump(sb.rootnode, DTypes::U5fsDtypeDir, "root", path_to_dump);
 
         println!("RFP: Read from path complete!");
