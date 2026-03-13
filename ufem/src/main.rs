@@ -201,32 +201,72 @@ impl Handle {
         let mut from = bytes_reserved;
         let mut to = from + bytes_uid;
         let uid = u32::from_be_bytes(block[from..to].try_into().unwrap());
-        from = to;
         println!("HDR: UID: {uid}. From: {from}. To: {to}");
+        from = to;
 
         to = from + bytes_gid;
         let gid = u32::from_be_bytes(block[from..to].try_into().unwrap());
-        from = to;
         println!("HDR: GID: {gid}. From: {from}. To: {to}");
+        from = to;
 
         to = from + bytes_atime_sec;
         let atime_sec = u32::from_be_bytes(block[from..to].try_into().unwrap());
-        from = to;
         println!("HDR: Atime_sec: {atime_sec}. From: {from}. To: {to}");
+        from = to;
+
+        to = from + bytes_atime_nsec;
+        let atime_nsec = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        println!("HDR: Atime_nsec: {atime_nsec}. From: {from}. To: {to}");
+        from = to;
+
+        to = from + bytes_mtime_sec;
+        let mtime_sec = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        println!("HDR: Mtime_sec: {mtime_sec}. From: {from}. To: {to}");
+        from = to;
+
+        to = from + bytes_mtime_nsec;
+        let mtime_nsec = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        println!("HDR: Mtime_nsec: {mtime_nsec}. From: {from}. To: {to}");
+        from = to;
+
+        to = from + bytes_ctime_sec;
+        let ctime_sec = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        println!("HDR: Mtime_sec: {ctime_sec}. From: {from}. To: {to}");
+        from = to;
+
+        to = from + bytes_ctime_nsec;
+        let ctime_nsec = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        println!("HDR: Mtime_nsec: {ctime_nsec}. From: {from}. To: {to}");
+        from = to;
+
+        to = from + bytes_perm;
+        let perm = u16::from_be_bytes(block[from..to].try_into().unwrap());
+        println!("HDR: PERM: {perm}. From: {from}. To: {to}");
+        from = to;
+
+        to = from + bytes_links;
+        let links = u16::from_be_bytes(block[from..to].try_into().unwrap());
+        println!("HDR: Links: {links}. From: {from}. To: {to}");
+        from = to;
+
+        to = from + bytes_size;
+        let size = u32::from_be_bytes(block[from..to].try_into().unwrap());
+        println!("HDR: Size: {size}. From: {from}. To: {to}");
+        from = to;
 
         println!("HDR: Completed reading header..");
         return INodeHeader {
-            gid: uid,
-            uid: gid,
-            atime_sec: 0,
-            atime_nsec: 0,
-            mtime_sec: 0,
-            mtime_nsec: 0,
-            ctime_sec: 0,
-            ctime_nsec: 0,
-            perm: 0,
-            links: 0,
-            size: 0,
+            uid,
+            gid,
+            atime_sec,
+            atime_nsec,
+            mtime_sec,
+            mtime_nsec,
+            ctime_sec,
+            ctime_nsec,
+            perm,
+            links,
+            size,
         };
     }
 
