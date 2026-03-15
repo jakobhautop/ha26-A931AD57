@@ -305,7 +305,7 @@ impl Handle {
     fn get_block(&self, block_index: u32) -> Vec<u8> {
         println!("BLK: Beginning read of block {block_index}");
         let mut file = File::open(self.path.clone()).unwrap();
-        let byte_index = self.sb.unwrap().blocksize * block_index;
+        let byte_index = self.sb.unwrap().blocksize as u64 * block_index as u64;
         println!("BLK: Reading from byte {byte_index}");
         file.seek(SeekFrom::Start(byte_index.into())).unwrap();
         let mut buf = vec![0u8; self.sb.unwrap().blocksize.try_into().unwrap()];
