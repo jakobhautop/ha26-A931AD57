@@ -420,18 +420,24 @@ impl Handle {
     }
 
     fn parse_dir_entries(&self, inode: u32) -> Vec<DirEntry> {
-        println!("DEN: Parsing dir entries: {inode}");
+        println!("DEN: Parsing dir entries of block: {inode}");
         println!("DEN: Reading block: {inode}");
         let block = self.get_block(inode);
         println!("DEN: Completed reading block {inode}");
         println!("DEN: Reading header from block {inode}");
         let (header, header_length) = Self::read_header(&block);
-        println!("DEN: Completed reading header from block {inode}.. Size: {0}", header.size);
+        println!(
+            "DEN: Completed reading header from block {inode}.. Size: {0}",
+            header.size
+        );
         println!("DEN: Reading bytes containing entries from block {inode}");
         let dir_entries_start = header_length as usize;
         let dir_entries_stop = self.sb.unwrap().blocksize as usize;
         let dir_entries_bytes = &block[dir_entries_start..dir_entries_stop];
         println!("DEN: Completed reading bytes containing entries from block {inode}");
+        println!("<Node : {inode}>");
+        println!("{:?}", block);
+        println!("</Node : {inode}>");
         println!("DEN: Beginning reading dir entries from bytes from block {inode}");
         let dir_entries: Vec<DirEntry> = dir_entries_bytes
             .chunks(header.size.try_into().unwrap())
@@ -452,13 +458,13 @@ impl Handle {
             })
             .filter(|entry| entry.dtype != DTypes::unknown)
             .collect();
-        
+
         dir_entries.clone().into_iter().map(|e| {
-             println!(
-                    "DEN <DEBUG> VALID dnode: {0} dtype: {1} name: {2}",
-                    e.dnode, e.dtype, e.name
-                );
-        } );
+            println!(
+                "DEN <DEBUG> VALID dnode: {0} dtype: {1} name: {2}",
+                e.dnode, e.dtype, e.name
+            );
+        });
         println!(
             "DEN: Completed gathering {:?} valid entries from block {inode}",
             dir_entries.len()
