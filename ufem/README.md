@@ -55,4 +55,5 @@ note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 Hvis man dividerer 1641653391360/4096 får man faktisk den rigtige block. Så aritmetikken er ok. 
 Så må det være block index der er forkert...
 
-Fix 2) 
+Fix 2) Jeg lagde mærke til at u5fs_file_indirect2 i speccen har 4 reserverede bytes.
+Så introducerede et offset på 4 bytes inden jeg læser blokke fra indirect2.
