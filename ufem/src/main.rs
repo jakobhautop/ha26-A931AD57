@@ -435,9 +435,11 @@ impl Handle {
         let dir_entries_stop = self.sb.unwrap().blocksize as usize;
         let dir_entries_bytes = &block[dir_entries_start..dir_entries_stop];
         println!("DEN: Completed reading bytes containing entries from block {inode}");
+        /*
         println!("<Node : {inode}>");
         println!("{:?}", dir_entries_bytes);
         println!("</Node : {inode}>");
+        */
         println!("DEN: Beginning reading dir entries from bytes from block {inode}");
 
         let mut dir_entries = Vec::new();
