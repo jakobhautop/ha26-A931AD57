@@ -175,7 +175,6 @@ impl Handle {
                 println!("DMP: Completed creating dir..");
                 println!("DMP: Reading entries in block {inode}");
                 let dir_entries = self.parse_dir_entries(inode);
-                println!("DMP: Completed reading entries: {:?}", dir_entries.len());
                 println!(
                     "DMP: Beginning processing {:?} entries..",
                     dir_entries.len()
@@ -446,12 +445,16 @@ impl Handle {
                 println!("DEN: entry {name}");
                 let dnode = u32::from_be_bytes(chunk[0..4].try_into().unwrap());
                 let dtype = DTypes::from(u8::from_be_bytes(chunk[4..5].try_into().unwrap()));
+                println!(
+                    "DEN <DEBUG> dnode: {0} dtype: {1} name: {2}",
+                    dnode, dtype, name
+                );
                 DirEntry { dnode, dtype, name }
             })
             .filter(|entry| entry.dtype != DTypes::unknown)
             .collect();
         println!(
-            "DEN: Completed reading dir {:?} valid entries from bytes",
+            "DEN: Completed gathering {:?} valid entries from block {inode}",
             dir_entries.len()
         );
         return dir_entries;
