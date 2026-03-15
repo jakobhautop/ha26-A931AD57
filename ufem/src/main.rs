@@ -233,6 +233,10 @@ impl Handle {
 
         let indirect1_from = direct_blocks_to;
         let indirect1_to = indirect1_from + 4;
+        println!("FIL: Reading indirect1 as BE between {indirect1_from} and {indirect1_to}");
+        println!("<Node> {0}", path); 
+        println!("{:?}", node_data);
+        println!("<Node> {0}", path); 
         let indirect1_index =
             u32::from_be_bytes(node_data[indirect1_from..indirect1_to].try_into().unwrap());
 
@@ -246,7 +250,8 @@ impl Handle {
                 .collect();
 
             debug_scan_blocks(&indirect1_blocks, "Indirect1 blocks", path, blockcount);
-            let indirect1_blocks_le: Vec<u32> = indirect1_data
+            
+            /*let indirect1_blocks_le: Vec<u32> = indirect1_data
                 .chunks(4)
                 .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
                 .filter(|idx| *idx != 0)
@@ -258,6 +263,7 @@ impl Handle {
                 path,
                 blockcount,
             );
+            */
 
             blocks_to_read.extend(indirect1_blocks.clone());
             println!(

@@ -81,6 +81,12 @@ Dette viser overraskende at det er når jeg læser fra indirect1 fejlen er:
 >> DEBUG: dump/root/update2d/images/imgB1.u2d: 
 Found invalid block 3009847678 (max is 128000). Indirect1 blocks
 
+Fix 4) 
+Jeg læser koden igennem men kan ikke ummidelbart se fejlen. Tænker at dette måske er lavet for at 
+drille og at man "med vilje" har encoded indirect1 blocks med le istedet for be. 
+Så jeg prøver at bytte rundt til le (på trods af spec siger det skal være be).
+Dette løser heller ikke problemet.
+
 
 
 
