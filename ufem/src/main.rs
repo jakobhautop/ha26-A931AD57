@@ -439,6 +439,38 @@ impl Handle {
         println!("{:?}", dir_entries_bytes);
         println!("</Node : {inode}>");
         println!("DEN: Beginning reading dir entries from bytes from block {inode}");
+
+        let mut dir_entries = Vec::new();
+        let mut idx = 0;
+        let mut dnode_buf: [u8; 4] = [0, 0, 0, 0];
+        let mut dtype_buf: [u8; 1] = [0];
+        let mut name_buf = Vec::new();
+        for b in dir_entries_bytes.into_iter() {
+            if idx <= 3 {
+                dnode_buf[idx] = *b;
+                idx += 1;
+            } else if idx == 4 {
+                dtype_buf[0] = *b;
+                idx += 1;
+            } else if idx > 4 && *b != 0 {
+                name_buf.push(*b);
+            } else {
+                let name = String::from_utf8(name_buf).unwrap();
+                let dnode = u32::from_be_bytes(dnode_buf);
+                let dtype = DTypes::from(u8::from_be_bytes(dtype_buf));
+                println!(
+                    "DEN <DEBUG> dnode: {0} dtype: {1} name: {2}",
+                    dnode, dtype, name
+                );
+                dir_entries.push(DirEntry { dnode, dtype, name });
+                idx = 0;
+                dnode_buf = [0, 0, 0, 0];
+                dtype_buf = [0];
+                name_buf = Vec::new();
+            }
+        }
+
+        /*
         let dir_entries: Vec<DirEntry> = dir_entries_bytes
             .chunks(header.size.try_into().unwrap())
             .map(|chunk| {
@@ -459,6 +491,7 @@ impl Handle {
             .filter(|entry| entry.dtype != DTypes::unknown)
             .collect();
 
+
         dir_entries.clone().into_iter().map(|e| {
             println!(
                 "DEN <DEBUG> VALID dnode: {0} dtype: {1} name: {2}",
@@ -469,6 +502,7 @@ impl Handle {
             "DEN: Completed gathering {:?} valid entries from block {inode}",
             dir_entries.len()
         );
+        */
         return dir_entries;
     }
 }
