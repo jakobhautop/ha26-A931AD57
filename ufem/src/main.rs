@@ -172,13 +172,24 @@ impl Handle {
                 println!("DMP: Processing dir: {path}");
                 println!("DMP: Creating dir {path}");
                 Self::create_dir_with_perm(&path, inode_header.uid, inode_header.gid).unwrap();
-                println!("DMP: Completed creating dir");
-                println!("DMP: Reading entries");
+                println!("DMP: Completed creating dir..");
+                println!("DMP: Reading entries in block {inode}");
                 let dir_entries = self.parse_dir_entries(inode);
                 println!("DMP: Completed reading entries: {:?}", dir_entries.len());
-                println!("DMP: Beginning processing entries..");
+                println!(
+                    "DMP: Beginning processing {:?} entries..",
+                    dir_entries.len()
+                );
                 for entry in dir_entries {
+                    println!(
+                        "DMP: Beginning recursive dump of {0} ({1}) in {path} at block index {2}",
+                        entry.name, entry.dtype, entry.dnode
+                    );
                     self.recursive_dump(entry.dnode, entry.dtype, &entry.name, &path);
+                    println!(
+                        "DMP: Completed recursive dump of {0} ({1}) in {path} at block index {2}",
+                        entry.name, entry.dtype, entry.dnode
+                    );
                 }
                 println!("DMP: Completed processing entries");
                 println!("DMP: Completed dir: {path}");
