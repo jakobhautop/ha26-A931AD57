@@ -70,6 +70,7 @@ struct DirNode {
     entries: Vec<DirEntry>,
 }
 
+#[derive(Clone)]
 struct DirEntry {
     dnode: u32,
     dtype: DTypes,
@@ -172,11 +173,10 @@ impl Handle {
                 println!("DMP: Processing dir: {path}");
                 println!("DMP: Creating dir {path}");
                 Self::create_dir_with_perm(&path, inode_header.uid, inode_header.gid).unwrap();
-                println!("DMP: Completed creating dir..");
-                println!("DMP: Reading entries in block {inode}");
+                println!("DMP: Completed creating dir {path}");
                 let dir_entries = self.parse_dir_entries(inode);
                 println!(
-                    "DMP: Beginning processing {:?} entries..",
+                    "DMP: Beginning processing {:?} entries found in dir node {inode}",
                     dir_entries.len()
                 );
                 for entry in dir_entries {
@@ -421,18 +421,18 @@ impl Handle {
 
     fn parse_dir_entries(&self, inode: u32) -> Vec<DirEntry> {
         println!("DEN: Parsing dir entries: {inode}");
-        println!("DEN: Reading block..");
+        println!("DEN: Reading block: {inode}");
         let block = self.get_block(inode);
-        println!("DEN: Completed reading block..");
-        println!("DEN: Reading header..");
+        println!("DEN: Completed reading block {inode}");
+        println!("DEN: Reading header from block {inode}");
         let (header, header_length) = Self::read_header(&block);
-        println!("DEN: Completed reading header.. Size: {0}", header.size);
-        println!("DEN: Reading entries bytes");
+        println!("DEN: Completed reading header from block {inode}.. Size: {0}", header.size);
+        println!("DEN: Reading bytes containing entries from block {inode}");
         let dir_entries_start = header_length as usize;
         let dir_entries_stop = self.sb.unwrap().blocksize as usize;
         let dir_entries_bytes = &block[dir_entries_start..dir_entries_stop];
-        println!("DEN: Completed reading entries bytes");
-        println!("DEN: Reading dir entries from bytes");
+        println!("DEN: Completed reading bytes containing entries from block {inode}");
+        println!("DEN: Beginning reading dir entries from bytes from block {inode}");
         let dir_entries: Vec<DirEntry> = dir_entries_bytes
             .chunks(header.size.try_into().unwrap())
             .map(|chunk| {
@@ -442,7 +442,6 @@ impl Handle {
                     .position(|&b| b == 0)
                     .unwrap_or(name_bytes.len());
                 let name = String::from_utf8(name_bytes[..name_null_byte].to_vec()).unwrap();
-                println!("DEN: entry {name}");
                 let dnode = u32::from_be_bytes(chunk[0..4].try_into().unwrap());
                 let dtype = DTypes::from(u8::from_be_bytes(chunk[4..5].try_into().unwrap()));
                 println!(
@@ -453,6 +452,13 @@ impl Handle {
             })
             .filter(|entry| entry.dtype != DTypes::unknown)
             .collect();
+        
+        dir_entries.clone().into_iter().map(|e| {
+             println!(
+                    "DEN <DEBUG> VALID dnode: {0} dtype: {1} name: {2}",
+                    e.dnode, e.dtype, e.name
+                );
+        } );
         println!(
             "DEN: Completed gathering {:?} valid entries from block {inode}",
             dir_entries.len()
