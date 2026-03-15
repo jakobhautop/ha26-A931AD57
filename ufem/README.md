@@ -88,5 +88,10 @@ Så jeg prøver at bytte rundt til le (på trods af spec siger det skal være be
 Dette løser heller ikke problemet.
 
 
+Fix 5)
+Tilføjer mere debug og det ligner vi læser forkerte indices:
+FIL: Reading indirect1 as BE between 4036 and 4040
 
+Blocksize bude være 4096 og pr. spec burde indirect1 være på mellem (4096-16, 4096-12). 
+Dvs 4080-4084. 
 

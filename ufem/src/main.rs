@@ -231,8 +231,9 @@ impl Handle {
 
         debug_scan_blocks(&blocks_to_read, "Direct blocks", path, blockcount);
 
-        let indirect1_from = direct_blocks_to;
-        let indirect1_to = indirect1_from + 4;
+        // let indirect1_from = direct_blocks_to;
+        let indirect1_from = blocksize as usize - 16 as usize;
+        let indirect1_to = indirect1_from as usize + 4 as usize;
         println!("FIL: Reading indirect1 as BE between {indirect1_from} and {indirect1_to}");
         println!("<Node> {0}", path); 
         println!("{:?}", node_data);
@@ -271,11 +272,12 @@ impl Handle {
                 indirect1_blocks.len()
             );
 
-            let indirect2_from = indirect1_to;
-            let indirect2_to = indirect2_from + 4;
+            // let indirect2_from = indirect1_to;
+            let indirect2_from: usize = blocksize as usize - 12 as usize;
+            let indirect2_to: usize = indirect2_from as usize + 4 as usize;
             let indirect2_index =
                 u32::from_be_bytes(node_data[indirect2_from..indirect2_to].try_into().unwrap());
-
+            println!("FIL: Reading indirect2 as BE between {0} and {1}", indirect2_from, indirect2_to);
             if indirect2_index != 0 {
                 println!("FIL: Searching block indices from indirect2..");
                 let indirect2_data = self.get_block(indirect2_index);
