@@ -436,7 +436,7 @@ impl Handle {
         let dir_entries_bytes = &block[dir_entries_start..dir_entries_stop];
         println!("DEN: Completed reading bytes containing entries from block {inode}");
         println!("<Node : {inode}>");
-        println!("{:?}", block);
+        println!("{:?}", dir_entries_bytes);
         println!("</Node : {inode}>");
         println!("DEN: Beginning reading dir entries from bytes from block {inode}");
         let dir_entries: Vec<DirEntry> = dir_entries_bytes
