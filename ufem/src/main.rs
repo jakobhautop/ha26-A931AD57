@@ -205,11 +205,9 @@ impl Handle {
     }
 
     fn dump_file(&self, node_data: Vec<u8>, path: &str, header_length: u8, size: u32) {
-        
-        let blockcount = self.sb.unwrap().blockcount;       
+        let blockcount = self.sb.unwrap().blockcount;
         fn debug_scan_blocks(blocks: &Vec<u32>, note: &str, path: &str, blockcount: u32) {
             for b in blocks {
-
                 if *b > blockcount {
                     println!(
                         ">> DEBUG: {0}: Found invalid block {1} (max is {2}). {3}",
@@ -229,6 +227,8 @@ impl Handle {
             .filter(|idx| *idx != 0)
             .collect();
 
+        println!("FIL: {path} has {0} direct blocks", blocks_to_read.len());
+
         debug_scan_blocks(&blocks_to_read, "Direct blocks", path, blockcount);
 
         let indirect1_from = direct_blocks_to;
@@ -237,7 +237,7 @@ impl Handle {
             u32::from_be_bytes(node_data[indirect1_from..indirect1_to].try_into().unwrap());
 
         if indirect1_index != 0 {
-            println!("FIL: Searching block indices from indirect1..");
+            println!("FIL: Searching block indices from indirect1 at index {indirect1_index}");
             let indirect1_data = self.get_block(indirect1_index);
             let indirect1_blocks: Vec<u32> = indirect1_data
                 .chunks(4)
@@ -246,6 +246,18 @@ impl Handle {
                 .collect();
 
             debug_scan_blocks(&indirect1_blocks, "Indirect1 blocks", path, blockcount);
+            let indirect1_blocks_le: Vec<u32> = indirect1_data
+                .chunks(4)
+                .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
+                .filter(|idx| *idx != 0)
+                .collect();
+
+            debug_scan_blocks(
+                &indirect1_blocks_le,
+                "Indirect1 blocks LE",
+                path,
+                blockcount,
+            );
 
             blocks_to_read.extend(indirect1_blocks.clone());
             println!(

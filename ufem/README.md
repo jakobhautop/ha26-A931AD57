@@ -56,4 +56,31 @@ Hvis man dividerer 1641653391360/4096 får man faktisk den rigtige block. Så ar
 Så må det være block index der er forkert...
 
 Fix 2) Jeg lagde mærke til at u5fs_file_indirect2 i speccen har 4 reserverede bytes.
-Så introducerede et offset på 4 bytes inden jeg læser blokke fra indirect2.
+Så introducerede et offset på 4 bytes inden jeg læser blokke fra indirect2..
+Dette løste ikke problemet heller. 
+
+Fix 3) for at indsnævre problemet yderligere lavede jeg en debug function
+som jeg tjekker de blok-indexes jeg finder med:
+
+```
+        fn debug_scan_blocks(blocks: &Vec<u32>, note: &str, path: &str, blockcount: u32) {
+            for b in blocks {
+
+                if *b > blockcount {
+                    println!(
+                        ">> DEBUG: {0}: Found invalid block {1} (max is {2}). {3}",
+                        path, b, blockcount, note
+                    );
+                }
+            }
+        }
+```
+
+Dette viser overraskende at det er når jeg læser fra indirect1 fejlen er:
+
+>> DEBUG: dump/root/update2d/images/imgB1.u2d: 
+Found invalid block 3009847678 (max is 128000). Indirect1 blocks
+
+
+
+
