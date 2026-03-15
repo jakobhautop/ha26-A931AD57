@@ -234,10 +234,12 @@ impl Handle {
         // let indirect1_from = direct_blocks_to;
         let indirect1_from = blocksize as usize - 16 as usize;
         let indirect1_to = indirect1_from as usize + 4 as usize;
+        /*
         println!("FIL: Reading indirect1 as BE between {indirect1_from} and {indirect1_to}");
         println!("<Node> {0}", path); 
         println!("{:?}", node_data);
         println!("<Node> {0}", path); 
+        */
         let indirect1_index =
             u32::from_be_bytes(node_data[indirect1_from..indirect1_to].try_into().unwrap());
 
@@ -344,14 +346,14 @@ impl Handle {
     }
 
     fn get_block(&self, block_index: u32) -> Vec<u8> {
-        println!("BLK: Beginning read of block {block_index}");
+        // println!("BLK: Beginning read of block {block_index}");
         let mut file = File::open(self.path.clone()).unwrap();
         let byte_index = self.sb.unwrap().blocksize as u64 * block_index as u64;
-        println!("BLK: Reading from byte {byte_index}");
+        // println!("BLK: Reading from byte {byte_index}");
         file.seek(SeekFrom::Start(byte_index.into())).unwrap();
         let mut buf = vec![0u8; self.sb.unwrap().blocksize.try_into().unwrap()];
         file.read_exact(&mut buf).unwrap();
-        println!("BLK: Completed reading block {block_index}");
+        // println!("BLK: Completed reading block {block_index}");
         return buf;
     }
 
@@ -501,10 +503,12 @@ impl Handle {
                 let name = String::from_utf8(name_buf).unwrap();
                 let dnode = u32::from_be_bytes(dnode_buf);
                 let dtype = DTypes::from(u8::from_be_bytes(dtype_buf));
+                /*
                 println!(
                     "DEN <DEBUG> dnode: {0} dtype: {1} name: {2}",
                     dnode, dtype, name
                 );
+                */
                 dir_entries.push(DirEntry { dnode, dtype, name });
                 idx = 0;
                 dnode_buf = [0, 0, 0, 0];
