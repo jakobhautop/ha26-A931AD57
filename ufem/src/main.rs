@@ -3,6 +3,7 @@ use std::fs::create_dir;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
+use std::io::Write;
 // use std::os::unix::fs::chown; temporarily not used
 use std::fs::OpenOptions;
 
@@ -196,75 +197,89 @@ impl Handle {
     fn dump_file(&self, node_data: Vec<u8>, path: &str, header_length: u8, size: u32) {
         println!("FIL: Beginning dump of {size} bytes to file {path}");
         let blocksize = self.sb.unwrap().blocksize;
+        let direct_blocks_from = header_length as usize;
+        let direct_blocks_to = blocksize as usize - header_length as usize - 16; // 16 = 4 indirect1 + 4 indirect2 + 8 reserved
+        let mut blocks_to_read: Vec<u32> = node_data[direct_blocks_from..direct_blocks_to]
+            .chunks(4)
+            .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
+            .filter(|idx| *idx != 0)
+            .collect();
+
+        let indirect1_from = direct_blocks_to;
+        let indirect1_to = indirect1_from + 4;
+        let indirect1_index =
+            u32::from_be_bytes(node_data[indirect1_from..indirect1_to].try_into().unwrap());
+
+        if indirect1_index != 0 {
+            println!("FIL: Searching block indices from indirect1..");
+            let indirect1_data = self.get_block(indirect1_index);
+            let indirect1_blocks: Vec<u32> = indirect1_data
+                .chunks(4)
+                .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
+                .filter(|idx| *idx != 0)
+                .collect();
+
+            blocks_to_read.extend(indirect1_blocks.clone());
+            println!(
+                "FIL: Found and added {:?} blocks from indirect1..",
+                indirect1_blocks.len()
+            );
+
+            let indirect2_from = indirect1_to;
+            let indirect2_to = indirect2_from + 4;
+            let indirect2_index =
+                u32::from_be_bytes(node_data[indirect2_from..indirect2_to].try_into().unwrap());
+
+            if indirect2_index != 0 {
+                println!("FIL: Searching block indices from indirect2..");
+                let indirect2_data = self.get_block(indirect2_index);
+                let indirect2_indirect1_blocks: Vec<u32> = indirect2_data
+                    .chunks(4)
+                    .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
+                    .filter(|idx| *idx != 0)
+                    .collect();
+
+                println!(
+                    "FIL: Found {:?} indirect2 blocks",
+                    indirect2_indirect1_blocks
+                );
+
+                let indirect2_blocks: Vec<u32> = indirect2_indirect1_blocks
+                    .into_iter()
+                    .flat_map(|idx| {
+                        println!("FIL: Searching indices from indirect2 block {idx}");
+                        let data: Vec<u8> = self.get_block(idx);
+                        data.chunks(4)
+                            .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
+                            .filter(|idx| *idx != 0)
+                            .collect::<Vec<_>>()
+                    })
+                    .collect();
+
+                blocks_to_read.extend(indirect2_blocks.clone());
+                println!("FIL: Found and added {:?} blocks", indirect2_blocks.len());
+            }
+        }
+
+        let mut blocks_to_load = size.div_ceil(blocksize);
+        println!(
+            "FIL: Estimated blocks needed: {blocks_to_load}. Blocks found: {:?}",
+            blocks_to_read.len()
+        );
+
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
             .open(path)
             .unwrap();
+        println!("FIL: Prepared {path} for dumping data");
 
-        let direct_blocks_from = header_length as usize;
-        let direct_blocks_to = blocksize as usize - header_length as usize - 16; // 16 = 4 indirect1 + 4 indirect2 + 8 reserved
-        let direct_blocks: Vec<u32> = node_data[direct_blocks_from..direct_blocks_to]
-            .chunks(4)
-            .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
-            .collect();
-
-        /*
-
-        println!("FIL: block contains {n_direct_bytes} bytes. Size is {size}");
-
-        if size < bytes_in_block {
-            println!("FIL: File size {size} bytes is smaller than n blocks {bytes_in_block} in this node");
-            file.write_all(block[header_length as usize..bytes_remaining]).unwrap();
-            println!("FIL: Completed loading blocks into file {path}");
-        } else {
-            let mut remaining_bytes = size;
-            println!("FIL: Size {size} is longer than bytes contained in block {bytes_in_block}..");
-            let direct_block_data_from = header_length;
-            let direct_block_data_to = header_length + bytes_in_block;
-            file.write_all(block[direct_block_data_from..directs_block_data_to]).unwrap();
-            remaining_bytes =- bytes_in_block;
-            println!("FIL: Completed reading {bytes_in_block} into file. Remaining bytes: {remaining_bytes}");
-            let indirect1_from = direct_block_data_to;
-            let indirect1_to = indirect1_from + 4;
-            let indrect1_index = u32::from_be_bytes(block[indirect1_from..indirect1_to]).unwrap();
-            let indect1 = get_block(indirect1_index)
-            println!("FIL: Begining loading indirect data from indirect1 at index: {indrect1_index}");
-            if remaining_bytes < blocksize {
-                println!("FIL: Loading remaining bytes {remaining_bytes} from indirect1 into file");
-                file.write_all(indirect1[..remaining]).unwrap();
-                println!("FIL: Completed loading all bytes into {path}");
-            } else {
-                println!("FIL: Loading all bytes {remaining_bytes} from indirect1 into file");
-                file.write_all(indirect1[..blocksize]).unwrap();
-                remaining_bytes =- blocksize;
-                println!("FIL: Completed loading entire indirect1 into file {path}. Remaining bytes: {remaining_bytes}");
-                println!("FIL: Beginning to load indirect2 nodes..");
-                let indirect2_from = indirect1_to;
-                let indirect2_to = indirect_from + 4;
-                let indirect2_index = u32::from_be_bytes(block[indirect2_from..indirect2_to]).unwrap();
-                println!("FIL: Indirect2 node found at index {indirect2_index}");
-                let indirect2_data = get_block(indirect2_index).unwrap();
-                println!("FIL: Loaded indirect2 into buffer..");
-                for chunk in indirect2_data.chunks(4) {
-                    let node_index = u32::from_be_btes(chunk).unwrap();
-                    let node_data = get_block(node_index).unwrap();
-                    if remaining_bytes < blocksize {
-                        println!("FIL: Remaining bytes are smaller than block size. Loadining remaining into {path}");
-                        file.write_all(node_data[..remaining_bytes]).unwrap();
-                        println!("FIL: Completed loading bytes from indirect nodes into {path}");
-                        break
-                    } else {
-                        println!("FIL: Loading full node into {path}");
-                        file.write_all(node_data[..blocksize]).unwrap();
-                        remaining_bytes =- block_size;
-                        println!("FIL: Loaded {blocksize} into {path} from node {node_index}. Bytes remaining: {remaining_bytes}");
-                    }
-                }
-            }
-            println!("FIL: Completed dumping data to {path}");
+        for block_index in blocks_to_read {
+            println!("FIL: Loading block {block_index} into {path}");
+            let data = self.get_block(block_index);
+            file.write_all(&data).unwrap();
+            println!("FIL: Completed loading block {block_index} into {path}");
         }
-        */
     }
 
     fn create_dir_with_perm(path: &str, uid: u32, gid: u32) -> std::io::Result<()> {
