@@ -243,7 +243,8 @@ impl Handle {
             if indirect2_index != 0 {
                 println!("FIL: Searching block indices from indirect2..");
                 let indirect2_data = self.get_block(indirect2_index);
-                let indirect2_indirect1_blocks: Vec<u32> = indirect2_data
+                let indirect2_data_blocks = &indirect2_data[4..];
+                let indirect2_indirect1_blocks: Vec<u32> = indirect2_data_blocks
                     .chunks(4)
                     .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
                     .filter(|idx| *idx != 0)

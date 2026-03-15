@@ -39,4 +39,20 @@ Change: 2026-03-10 00:28:20.916000000 +0000
  Birth: 2026-03-10 00:28:18.204000000 +0000
 ```
 
+Fix 1) brug u64 til at udregne block index istedet for u32 * u32 fordi vi ku få overflow. 
+Dette gav dog:
 
+```
+FIL: Searching indices from indirect2 block 400794285
+BLK: Beginning read of block 400794285
+BLK: Reading from byte 1641653391360
+
+thread 'main' (71689) panicked at src/main.rs:312:35:
+called `Result::unwrap()` on an `Err` value: Error { kind: UnexpectedEof, message: "failed to fill whole buffer" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+Hvis man dividerer 1641653391360/4096 får man faktisk den rigtige block. Så aritmetikken er ok. 
+Så må det være block index der er forkert...
+
+Fix 2) 
