@@ -93,5 +93,31 @@ Tilføjer mere debug og det ligner vi læser forkerte indices:
 FIL: Reading indirect1 as BE between 4036 and 4040
 
 Blocksize bude være 4096 og pr. spec burde indirect1 være på mellem (4096-16, 4096-12). 
-Dvs 4080-4084. 
+Dvs 4080-4084. Jeg opdaterer måden vi læser bytes og det virker endelig! 
 
+## 3) Null bytes over alt
+
+Da jeg prøver at køre ./update2d med default values får jeg "Error: Code 2000".
+Jeg læser C koden og kan se det betyder forkert signatur.
+Men det image jeg har fået udleveret kan umuligt have forkert signatur???
+Det må betyde filen er skrevet forkert så signaturen ikke passer.. 
+
+./update2d --onlysigned --keyfile=images/key.priv --logfile=/dev/null --verbose < images/imgA.u2d
+Error: Code 2000
+
+fix 1) Jeg opdager en fejl i ufem: vi skriver kun hele blocks. Jeg har glemt den lille detalje
+at filer jo selvfølgelig ikke har størrelse af perfect blocksize. 
+Jeg retter ufem til at tage højde for file size.. lad os se hvad der sker.. 
+
+        let mut bytes_remaining = size;
+        for block_index in blocks_to_read {
+            println!("FIL: Loading block {block_index} into {path}");
+            let data = self.get_block(block_index);
+            let mut bytes_to_read = data.len();
+            if bytes_remaining < blocksize {
+                bytes_to_read = bytes_remaining as usize;
+            }
+            file.write_all(&data[..bytes_to_read]).unwrap();
+            println!("FIL: Completed loading block {block_index} into {path}");
+            bytes_remaining -= blocksize;
+        }
