@@ -236,9 +236,9 @@ impl Handle {
         let indirect1_to = indirect1_from as usize + 4 as usize;
         /*
         println!("FIL: Reading indirect1 as BE between {indirect1_from} and {indirect1_to}");
-        println!("<Node> {0}", path); 
+        println!("<Node> {0}", path);
         println!("{:?}", node_data);
-        println!("<Node> {0}", path); 
+        println!("<Node> {0}", path);
         */
         let indirect1_index =
             u32::from_be_bytes(node_data[indirect1_from..indirect1_to].try_into().unwrap());
@@ -253,7 +253,7 @@ impl Handle {
                 .collect();
 
             debug_scan_blocks(&indirect1_blocks, "Indirect1 blocks", path, blockcount);
-            
+
             /*let indirect1_blocks_le: Vec<u32> = indirect1_data
                 .chunks(4)
                 .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
@@ -279,7 +279,10 @@ impl Handle {
             let indirect2_to: usize = indirect2_from as usize + 4 as usize;
             let indirect2_index =
                 u32::from_be_bytes(node_data[indirect2_from..indirect2_to].try_into().unwrap());
-            println!("FIL: Reading indirect2 as BE between {0} and {1}", indirect2_from, indirect2_to);
+            println!(
+                "FIL: Reading indirect2 as BE between {0} and {1}",
+                indirect2_from, indirect2_to
+            );
             if indirect2_index != 0 {
                 println!("FIL: Searching block indices from indirect2..");
                 let indirect2_data = self.get_block(indirect2_index);
@@ -327,11 +330,17 @@ impl Handle {
             .unwrap();
         println!("FIL: Prepared {path} for dumping data");
 
+        let mut bytes_remaining = size;
         for block_index in blocks_to_read {
             println!("FIL: Loading block {block_index} into {path}");
             let data = self.get_block(block_index);
-            file.write_all(&data).unwrap();
+            let mut bytes_to_read = data.len();
+            if bytes_remaining < blocksize {
+                bytes_to_read = bytes_remaining as usize;
+            }
+            file.write_all(&data[..bytes_to_read]).unwrap();
             println!("FIL: Completed loading block {block_index} into {path}");
+            bytes_remaining -= bytes_to_read as u32;
         }
     }
 
