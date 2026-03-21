@@ -11,7 +11,7 @@ impl Client {
     fn init() -> Client {
         println!("INI: Beginning client init");
         println!("INI: Netupsrc on {}", NETUPSRV);
-        let mut stream = TcpStream::connect(NETUPSRV).unwrap();
+        let stream = TcpStream::connect(NETUPSRV).unwrap();
         println!("INI: Completed client init");
         return Self { stream };
     }
@@ -38,7 +38,8 @@ fn main() {
     match command.as_str() {
         "ping" => {
             println!("CLI: Beginning ping..");
-            let client = Client::init();
+            let mut client = Client::init();
+            client.ping();
             println!("CLI: Completed ping..");
         }
         _ => panic!("Unknown command: {command}"),
