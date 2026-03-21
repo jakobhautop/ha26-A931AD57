@@ -21,8 +21,8 @@ impl Client {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let command = &args[1];
-    let arg1 = &args[2];
-    let arg2 = &args[3];
+    //let arg1 = &args[2];
+    //let arg2 = &args[3];
 
     match command.as_str() {
         "ping" => {
