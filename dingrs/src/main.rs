@@ -1,9 +1,7 @@
 use std::io::{Read, Write};
 use std::net::TcpStream;
 
-const PORT: u16 = 6666;
-const IP: &str = "127.0.0.1";
-const NETUPSRV: &str = "{IP}:{PORT}";
+const NETUPSRV: &str = "127.0.0.1:6666";
 
 struct Client {
     stream: TcpStream,
