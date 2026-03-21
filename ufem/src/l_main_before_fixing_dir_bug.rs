@@ -205,18 +205,6 @@ impl Handle {
     }
 
     fn dump_file(&self, node_data: Vec<u8>, path: &str, header_length: u8, size: u32) {
-        let blockcount = self.sb.unwrap().blockcount;
-        fn debug_scan_blocks(blocks: &Vec<u32>, note: &str, path: &str, blockcount: u32) {
-            for b in blocks {
-                if *b > blockcount {
-                    println!(
-                        ">> DEBUG: {0}: Found invalid block {1} (max is {2}). {3}",
-                        path, b, blockcount, note
-                    );
-                }
-            }
-        }
-
         println!("FIL: Beginning dump of {size} bytes to file {path}");
         let blocksize = self.sb.unwrap().blocksize;
         let direct_blocks_from = header_length as usize;
@@ -227,24 +215,13 @@ impl Handle {
             .filter(|idx| *idx != 0)
             .collect();
 
-        println!("FIL: {path} has {0} direct blocks", blocks_to_read.len());
-
-        debug_scan_blocks(&blocks_to_read, "Direct blocks", path, blockcount);
-
-        // let indirect1_from = direct_blocks_to;
-        let indirect1_from = blocksize as usize - 16 as usize;
-        let indirect1_to = indirect1_from as usize + 4 as usize;
-        /*
-        println!("FIL: Reading indirect1 as BE between {indirect1_from} and {indirect1_to}");
-        println!("<Node> {0}", path);
-        println!("{:?}", node_data);
-        println!("<Node> {0}", path);
-        */
+        let indirect1_from = direct_blocks_to;
+        let indirect1_to = indirect1_from + 4;
         let indirect1_index =
             u32::from_be_bytes(node_data[indirect1_from..indirect1_to].try_into().unwrap());
 
         if indirect1_index != 0 {
-            println!("FIL: Searching block indices from indirect1 at index {indirect1_index}");
+            println!("FIL: Searching block indices from indirect1..");
             let indirect1_data = self.get_block(indirect1_index);
             let indirect1_blocks: Vec<u32> = indirect1_data
                 .chunks(4)
@@ -252,42 +229,21 @@ impl Handle {
                 .filter(|idx| *idx != 0)
                 .collect();
 
-            debug_scan_blocks(&indirect1_blocks, "Indirect1 blocks", path, blockcount);
-
-            /*let indirect1_blocks_le: Vec<u32> = indirect1_data
-                .chunks(4)
-                .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
-                .filter(|idx| *idx != 0)
-                .collect();
-
-            debug_scan_blocks(
-                &indirect1_blocks_le,
-                "Indirect1 blocks LE",
-                path,
-                blockcount,
-            );
-            */
-
             blocks_to_read.extend(indirect1_blocks.clone());
             println!(
                 "FIL: Found and added {:?} blocks from indirect1..",
                 indirect1_blocks.len()
             );
 
-            // let indirect2_from = indirect1_to;
-            let indirect2_from: usize = blocksize as usize - 12 as usize;
-            let indirect2_to: usize = indirect2_from as usize + 4 as usize;
+            let indirect2_from = indirect1_to;
+            let indirect2_to = indirect2_from + 4;
             let indirect2_index =
                 u32::from_be_bytes(node_data[indirect2_from..indirect2_to].try_into().unwrap());
-            println!(
-                "FIL: Reading indirect2 as BE between {0} and {1}",
-                indirect2_from, indirect2_to
-            );
+
             if indirect2_index != 0 {
                 println!("FIL: Searching block indices from indirect2..");
                 let indirect2_data = self.get_block(indirect2_index);
-                let indirect2_data_blocks = &indirect2_data[4..];
-                let indirect2_indirect1_blocks: Vec<u32> = indirect2_data_blocks
+                let indirect2_indirect1_blocks: Vec<u32> = indirect2_data
                     .chunks(4)
                     .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
                     .filter(|idx| *idx != 0)
@@ -310,8 +266,6 @@ impl Handle {
                     })
                     .collect();
 
-                debug_scan_blocks(&indirect2_blocks, "Indirect2 blocks", path, blockcount);
-
                 blocks_to_read.extend(indirect2_blocks.clone());
                 println!("FIL: Found and added {:?} blocks", indirect2_blocks.len());
             }
@@ -330,17 +284,11 @@ impl Handle {
             .unwrap();
         println!("FIL: Prepared {path} for dumping data");
 
-        let mut bytes_remaining = size;
         for block_index in blocks_to_read {
             println!("FIL: Loading block {block_index} into {path}");
             let data = self.get_block(block_index);
-            let mut bytes_to_read = data.len();
-            if bytes_remaining < blocksize {
-                bytes_to_read = bytes_remaining as usize;
-            }
-            file.write_all(&data[..bytes_to_read]).unwrap();
+            file.write_all(&data).unwrap();
             println!("FIL: Completed loading block {block_index} into {path}");
-            bytes_remaining -= bytes_to_read as u32;
         }
     }
 
@@ -355,14 +303,14 @@ impl Handle {
     }
 
     fn get_block(&self, block_index: u32) -> Vec<u8> {
-        // println!("BLK: Beginning read of block {block_index}");
+        println!("BLK: Beginning read of block {block_index}");
         let mut file = File::open(self.path.clone()).unwrap();
-        let byte_index = self.sb.unwrap().blocksize as u64 * block_index as u64;
-        // println!("BLK: Reading from byte {byte_index}");
+        let byte_index = self.sb.unwrap().blocksize * block_index;
+        println!("BLK: Reading from byte {byte_index}");
         file.seek(SeekFrom::Start(byte_index.into())).unwrap();
         let mut buf = vec![0u8; self.sb.unwrap().blocksize.try_into().unwrap()];
         file.read_exact(&mut buf).unwrap();
-        // println!("BLK: Completed reading block {block_index}");
+        println!("BLK: Completed reading block {block_index}");
         return buf;
     }
 
@@ -487,46 +435,10 @@ impl Handle {
         let dir_entries_stop = self.sb.unwrap().blocksize as usize;
         let dir_entries_bytes = &block[dir_entries_start..dir_entries_stop];
         println!("DEN: Completed reading bytes containing entries from block {inode}");
-        /*
         println!("<Node : {inode}>");
         println!("{:?}", dir_entries_bytes);
         println!("</Node : {inode}>");
-        */
         println!("DEN: Beginning reading dir entries from bytes from block {inode}");
-
-        let mut dir_entries = Vec::new();
-        let mut idx = 0;
-        let mut dnode_buf: [u8; 4] = [0, 0, 0, 0];
-        let mut dtype_buf: [u8; 1] = [0];
-        let mut name_buf = Vec::new();
-        for b in dir_entries_bytes.into_iter() {
-            if idx <= 3 {
-                dnode_buf[idx] = *b;
-                idx += 1;
-            } else if idx == 4 {
-                dtype_buf[0] = *b;
-                idx += 1;
-            } else if idx > 4 && *b != 0 {
-                name_buf.push(*b);
-            } else {
-                let name = String::from_utf8(name_buf).unwrap();
-                let dnode = u32::from_be_bytes(dnode_buf);
-                let dtype = DTypes::from(u8::from_be_bytes(dtype_buf));
-                /*
-                println!(
-                    "DEN <DEBUG> dnode: {0} dtype: {1} name: {2}",
-                    dnode, dtype, name
-                );
-                */
-                dir_entries.push(DirEntry { dnode, dtype, name });
-                idx = 0;
-                dnode_buf = [0, 0, 0, 0];
-                dtype_buf = [0];
-                name_buf = Vec::new();
-            }
-        }
-
-        /*
         let dir_entries: Vec<DirEntry> = dir_entries_bytes
             .chunks(header.size.try_into().unwrap())
             .map(|chunk| {
@@ -547,7 +459,6 @@ impl Handle {
             .filter(|entry| entry.dtype != DTypes::unknown)
             .collect();
 
-
         dir_entries.clone().into_iter().map(|e| {
             println!(
                 "DEN <DEBUG> VALID dnode: {0} dtype: {1} name: {2}",
@@ -558,7 +469,6 @@ impl Handle {
             "DEN: Completed gathering {:?} valid entries from block {inode}",
             dir_entries.len()
         );
-        */
         return dir_entries;
     }
 }
