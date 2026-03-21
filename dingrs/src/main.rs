@@ -11,7 +11,8 @@ struct Client {
 
 impl Client {
     fn init() -> Self {
-        println!("INI: Beginning client init"); 
+        println!("INI: Beginning client init");
+        println!("INI: Netupsrc on {}", NETUPSRV);
         let mut stream = TcpStream::connect(NETUPSRV).unwrap();
         println!("INI: Completed client init");
         return Self { stream };
