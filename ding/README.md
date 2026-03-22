@@ -1,4 +1,4 @@
-# DDINGRS 
+# DING 
 
 Rust based DDING-3000 client.
 
@@ -8,12 +8,15 @@ Rust based DDING-3000 client.
 cargo install --path .
 
 # Ping netupsrv deamon 
-ddingrs ping
+ding ping
+
+
+# Following commands are just API specs and are not implemented
 
 # Upload file 
-ddingrs upload <path>
+ding upload <path>
 
 # Trigger command 
-ddingrs cmd <command>
+ding cmd <command>
 
 ```

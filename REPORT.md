@@ -3,10 +3,12 @@ ID: 532189
 Valgt mission: angreb via netupsrv 
 ---  
 
+
 # Rapport
 
 Denne rapport indeholder en beskrivelse af hvordan jeg har unpacket .u5fs images
 samt hvad jeg har fundet frem til i min analyse af netup protokolen. 
+
 
 # Resume 
 
@@ -14,6 +16,7 @@ Det lykkedes at unpacke operation.u5fs og vælge opgave 1 i /netupsrv.
 capture.pcap og netup binarien analyseres hhv i tshark og ghidra. 
 Det lykkedes ikke at lave en client der kan snakke med netupsrv og
 protokollen er kun knap delvist gennemskuet i følgende rapport. 
+
 
 # Valg af opgave
 
@@ -45,7 +48,9 @@ Og det virkede som den fedeste opgave at løse i weekenden 21-22/3.
 
 **Updatering pr. 22/03/2026: Okay reverse engineering af netup var meget svære end jeg troede, men ret sjovt :3 
 
+
 # Udpakning af operation.u5fs 
+
 
 ## Intro
 
@@ -129,6 +134,7 @@ dump
         └── update2d
 ```
 
+
 ## Rationaler og løsning 
 
 Denne opgave blev løst i aftenerne tirs-fredag 10-13/3.  
@@ -185,12 +191,14 @@ CLI: `ufem unpack operation.u5fs dump`
 Filer: u5fs.pdf, operation.u5fs 
 --- 
 
+
 #### Metode
 
 1. CLI indgang der læser args via stdin 
 2. Ved `ufem unpack <image> <path>` intantieres et `handle`
     - `handle` er et object der repræsenterer det u5fs image man arbjeder med 
 3. Man kalder metoder på handle som læser et u5fs image og dumper et fil træ. 
+
 
 #### Algoritme:
 
@@ -302,11 +310,13 @@ Overordnet struktur:
 - Individuelle filer og dirs bliver dannet med Rusts standard librarys fil API 
 - *Obs jeg har ikke root derfor er chown kommenteret ud i dir koden. Dette er en mangel. 
 
+
 #### Indlæsning af bytes
 
 Jeg bruger de layouts der er beskrevet i u5fs.pdf til at læse byte arrays 
 og parse dem til nogle få structs i Rust koden. Der er med vilje brugt .unwrap()
 alle steder for at få en panic med det samme der var en fejl. 
+
 
 # Angreb via netupsrv
 
@@ -316,11 +326,13 @@ filer: TSHARK.md, GHIDRA.md
 løst: nej 
 --- 
 
+
 ## Mål 
 
 Pr. opgave definitionen er målet at lave en client der kan snakke med netup serveren. 
 Denne client skal laves ved at reverse engineere protokollen der bruges til at kommunikere med serveren. 
 Til rådighed har man et netværks capture (capture.pcap) og en binary for serveren. 
+
 
 ## Metode 
 
@@ -334,6 +346,7 @@ Min overordnede plan er:
 3. Implementere en ping request til serveren (eller noget der minder om aliveness)
 4. Derefter udvide min client
 
+
 ### Dokumentation 
 
 Jeg har været lidt i tvivl om hvordan jeg har skulle dokumentere denne quest. Men har valgt følgende
@@ -346,6 +359,7 @@ fremgangs måde:
     - Derfor må man forvente at jeg kan finde ud af nogle ting 
         via disse tools. Og andre ting lærer jeg måske først
         når jeg implementerer klienten. 
+
 
 ## Protokol 
 
@@ -364,6 +378,7 @@ Her er hvad (jeg tror) jeg ved:
     - dynamisk data i headers der forskellig fra payload men ændrer sig fra pakke til pakke 
 
 Se nærmere i TSHARK.md 
+
 
 ### Analyse i ghidra 
 
@@ -391,6 +406,7 @@ netup/protocol..dict.RegisterMessageType[*netup/messages.AllocateResponse]
 netup/protocol..dict.RegisterMessageType[*netup/messages.AllocateRequest]
 ```
 
+
 #### Her går jeg i stå 
 
 Det var planen at Ghidra skulle hjælpe mig med at se byte layouts af message types.
@@ -404,6 +420,14 @@ Det lykkedes at bekræfte:
 
 Det første jeg ville finde ud af var 1) hvad den switcher på og 2) hvilket bytearray 
 der skulle til via TCP for at trigger en ping request. Men så langt kom jeg ikke. 
+
+
+## Skelet kode ding/
+
+Så snart jeg så vi brugte TCP i protokollen scaffoldede jeg et hurtigt CLI tool.
+Jeg troede at jeg ville nå at finde tid til at bygge rigtig funktionalitet ind 
+værktøjet, men det kom vi ikke til. Jeg har dog valgt at vedlægge koden alligevel. 
+
 
 # Reflesion 
 
