@@ -231,15 +231,8 @@ impl Handle {
 
         debug_scan_blocks(&blocks_to_read, "Direct blocks", path, blockcount);
 
-        // let indirect1_from = direct_blocks_to;
         let indirect1_from = blocksize as usize - 16 as usize;
         let indirect1_to = indirect1_from as usize + 4 as usize;
-        /*
-        println!("FIL: Reading indirect1 as BE between {indirect1_from} and {indirect1_to}");
-        println!("<Node> {0}", path);
-        println!("{:?}", node_data);
-        println!("<Node> {0}", path);
-        */
         let indirect1_index =
             u32::from_be_bytes(node_data[indirect1_from..indirect1_to].try_into().unwrap());
 
@@ -253,20 +246,6 @@ impl Handle {
                 .collect();
 
             debug_scan_blocks(&indirect1_blocks, "Indirect1 blocks", path, blockcount);
-
-            /*let indirect1_blocks_le: Vec<u32> = indirect1_data
-                .chunks(4)
-                .map(|chunk| u32::from_le_bytes(chunk.try_into().unwrap()))
-                .filter(|idx| *idx != 0)
-                .collect();
-
-            debug_scan_blocks(
-                &indirect1_blocks_le,
-                "Indirect1 blocks LE",
-                path,
-                blockcount,
-            );
-            */
 
             blocks_to_read.extend(indirect1_blocks.clone());
             println!(
@@ -487,11 +466,6 @@ impl Handle {
         let dir_entries_stop = self.sb.unwrap().blocksize as usize;
         let dir_entries_bytes = &block[dir_entries_start..dir_entries_stop];
         println!("DEN: Completed reading bytes containing entries from block {inode}");
-        /*
-        println!("<Node : {inode}>");
-        println!("{:?}", dir_entries_bytes);
-        println!("</Node : {inode}>");
-        */
         println!("DEN: Beginning reading dir entries from bytes from block {inode}");
 
         let mut dir_entries = Vec::new();
@@ -526,39 +500,6 @@ impl Handle {
             }
         }
 
-        /*
-        let dir_entries: Vec<DirEntry> = dir_entries_bytes
-            .chunks(header.size.try_into().unwrap())
-            .map(|chunk| {
-                let name_bytes = &chunk[5..];
-                let name_null_byte = name_bytes
-                    .iter()
-                    .position(|&b| b == 0)
-                    .unwrap_or(name_bytes.len());
-                let name = String::from_utf8(name_bytes[..name_null_byte].to_vec()).unwrap();
-                let dnode = u32::from_be_bytes(chunk[0..4].try_into().unwrap());
-                let dtype = DTypes::from(u8::from_be_bytes(chunk[4..5].try_into().unwrap()));
-                println!(
-                    "DEN <DEBUG> dnode: {0} dtype: {1} name: {2}",
-                    dnode, dtype, name
-                );
-                DirEntry { dnode, dtype, name }
-            })
-            .filter(|entry| entry.dtype != DTypes::unknown)
-            .collect();
-
-
-        dir_entries.clone().into_iter().map(|e| {
-            println!(
-                "DEN <DEBUG> VALID dnode: {0} dtype: {1} name: {2}",
-                e.dnode, e.dtype, e.name
-            );
-        });
-        println!(
-            "DEN: Completed gathering {:?} valid entries from block {inode}",
-            dir_entries.len()
-        );
-        */
         return dir_entries;
     }
 }
