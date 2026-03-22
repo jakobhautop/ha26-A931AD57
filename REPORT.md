@@ -414,8 +414,9 @@ at finde en exploit i protokolen og muligvis i server implementationen.
 
 En sådan exploit kunne have ladet os:
 
-    - Poste vores egne firmware updates?
+    - Poste vores egne firmware updates
     - Muligvis plante andre filer (backdors eller lign.) i DDING-3000
+    - Eller exfiltrere filer gennem netup selv
 
 Og dermed at givet os et foothold der senere kunne bruges til at exhiltrere 
 efterretninger om gæsterne på hotel Hilbert. 
